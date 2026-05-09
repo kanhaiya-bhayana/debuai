@@ -18,7 +18,8 @@ cat production.log | debuai --ai
 ## Demo
 
 <!-- Replace with your terminalizer GIF -->
-![DebugAI Demo](file.gif)
+https://github.com/user-attachments/assets/5771164c-865e-4c95-aff8-3cc7e2dae0f2
+
 
 ---
 
