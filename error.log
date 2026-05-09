@@ -1,7 +1,0 @@
-2026-03-17 10:22:01 INFO Starting service
-2026-03-17 10:22:02 INFO Processing trade
-2026-03-17 10:22:03 ERROR Something failed
-
-
-Error: Cannot read property 'x' of undefined  
-    at calculateTotal (order.js:42)

@@ -1,0 +1,13 @@
+java.lang.NullPointerException
+    at com.example.OrderService.calculateTotal(OrderService.java:42)
+    at com.example.OrderController.placeOrder(OrderController.java:18)
+    at com.example.MainApp.main(MainApp.java:10)
+
+Traceback (most recent call last):
+  File "server.py", line 10, in handle_request
+    result = process_data(payload)
+  File "processor.py", line 25, in process_data
+    value = parse_input(raw)
+  File "parser.py", line 8, in parse_input
+    return int(raw)
+ValueError: invalid literal for int() with base 10: 'abc'
