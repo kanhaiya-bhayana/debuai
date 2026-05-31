@@ -1,8 +1,0 @@
-typer
-rich
-openai
-anthropic
-
-[dev]
-pytest
-pytest-cov
