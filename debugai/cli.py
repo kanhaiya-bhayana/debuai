@@ -8,14 +8,15 @@ from debugai.constants.spinner_verbs import SPINNER_VERBS
 from debugai.constants.completion_spinner import COMPLETION_PHRASES
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 from debugai.analyzer import extract_all_stack_traces, explain_error
 from debugai.ai_analyzer import analyze_with_ai
 from debugai.scorer.relevance import select_most_relevant
+from debugai.issue_search import search_github_issues
 
 app = typer.Typer()
 console = Console()
 
-# Confidence badge colours for Rich output
 _CONFIDENCE_STYLE = {
     "high":   "bold green",
     "medium": "bold yellow",
@@ -25,6 +26,10 @@ _CONFIDENCE_ICON = {
     "high":   "🟢",
     "medium": "🟡",
     "low":    "🔴",
+}
+_STATE_ICON = {
+    "closed": "✅",
+    "open":   "🔴",
 }
 
 
@@ -47,6 +52,11 @@ def explain(
         False,
         "--json",
         help="Output results as clean JSON (suppresses Rich formatting)"
+    ),
+    issues: bool = typer.Option(
+        False,
+        "--issues",
+        help="Search GitHub for related issues"
     ),
 ):
     MAX_LINES = 300
@@ -98,7 +108,7 @@ def explain(
         else [select_most_relevant(traces)]
     )
 
-    # ── JSON mode — clean stdout, no Rich ────────────────────────────
+    # ── JSON mode ─────────────────────────────────────────────────────
     if json_output:
         output = []
         for trace in selected_trace:
@@ -118,13 +128,18 @@ def explain(
                     "prevention":  ai_result.get("prevention", ""),
                     "confidence":  ai_result.get("confidence", "low"),
                 }
+            if issues:
+                github_issues = search_github_issues(
+                    result["exception"], result["origin"]
+                )
+                entry["github_issues"] = github_issues
+
             output.append(entry)
 
-        # Single trace → object, multiple → array
         print(json.dumps(output[0] if len(output) == 1 else output, indent=2))
         return
 
-    # ── Rich mode — formatted terminal output ─────────────────────────
+    # ── Rich mode ─────────────────────────────────────────────────────
     for i, trace in enumerate(selected_trace, 1):
         console.print(f"\n[bold cyan]Error #{i}[/bold cyan]")
         result = explain_error(trace)
@@ -157,16 +172,61 @@ def explain(
                 title="[bold yellow]🛡 Prevention[/bold yellow]",
                 title_align="left", expand=False
             ))
-            console.print(
-                f"[{style}]{icon} Confidence: {confidence.upper()}[/{style}]"
-            )
+            console.print(f"[{style}]{icon} Confidence: {confidence.upper()}[/{style}]")
 
             phrase = random.choice(COMPLETION_PHRASES)
             console.print(f"[green]🍳 {phrase}![/green]")
 
+        if issues:
+            _render_issues(result["exception"], result["origin"])
+
+
+def _render_issues(exception_type: str, top_frame: str):
+    """Fetch and render related GitHub issues in a Rich table."""
+    with console.status("[bold blue]🔍 Searching GitHub issues..."):
+        results = search_github_issues(exception_type, top_frame)
+
+    if not results:
+        console.print(
+            Panel(
+                f"No related GitHub issues found for [bold]{exception_type}[/bold].\n"
+                "Try searching manually at github.com/search?type=issues",
+                title="🔍 GitHub Issues",
+                title_align="left",
+                expand=False
+            )
+        )
+        return
+
+    table = Table(
+        show_header=True,
+        header_style="bold blue",
+        border_style="blue",
+        expand=False,
+        title="🔍 Related GitHub Issues",
+        title_style="bold blue"
+    )
+    table.add_column("#",        style="dim",        width=3)
+    table.add_column("Title",    style="white",       max_width=52)
+    table.add_column("Repo",     style="cyan",        max_width=28)
+    table.add_column("Comments", justify="center",    width=9)
+    table.add_column("State",    justify="center",    width=8)
+
+    for i, issue in enumerate(results, 1):
+        state_icon = _STATE_ICON.get(issue["state"], "❓")
+        table.add_row(
+            str(i),
+            f"[link={issue['url']}]{issue['title'][:52]}[/link]",
+            issue["repo"],
+            str(issue["comments"]),
+            state_icon,
+        )
+
+    console.print(table)
+    console.print("[dim]↑ Click any title to open the issue on GitHub[/dim]\n")
+
 
 def _detect_language(trace: str) -> str:
-    """Best-effort language detection for the JSON output schema."""
     if "Traceback (most recent call last)" in trace:
         return "python"
     if ".java:" in trace:
