@@ -4,7 +4,7 @@ from .base import AIProvider
 
 class NvidiaProvider(AIProvider):
 
-    MODEL = "z-ai/glm4.7"
+    MODEL = "mistralai/mistral-large-3-675b-instruct-2512"
     BASE_URL = "https://integrate.api.nvidia.com/v1"
 
     def name(self) -> str:
