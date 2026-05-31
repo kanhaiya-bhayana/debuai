@@ -1,0 +1,4 @@
+java.lang.NullPointerException
+	at com.example.OrderService.calculateTotal(OrderService.java:42)
+	at com.example.OrderController.placeOrder(OrderController.java:18)
+	at com.example.MainApp.main(MainApp.java:10)

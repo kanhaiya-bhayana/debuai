@@ -1,6 +1,6 @@
 [project]
 name = "debuai"
-version = "0.1.0"
+version = "0.1.1"
 description = "AI-powered CLI tool that turns stack traces into root cause analysis instantly"
 readme = "README.md"
 license = { text = "MIT" }
@@ -24,8 +24,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/kanhaiya-bhayana/debugai"
-Repository = "https://github.com/kanhaiya-bhayana/debugai"
+Homepage = "https://github.com/kanhaiya-bhayana/debuai"
+Repository = "https://github.com/kanhaiya-bhayana/debuai"
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov"]

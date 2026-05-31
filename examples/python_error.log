@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "server.py", line 10, in handle_request
+    result = process_data(payload)
+  File "processor.py", line 25, in process_data
+    value = parse_input(raw)
+  File "parser.py", line 8, in parse_input
+    return int(raw)
+ValueError: invalid literal for int() with base 10: 'abc'
