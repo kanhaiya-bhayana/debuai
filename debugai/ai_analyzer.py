@@ -50,7 +50,7 @@ def analyze_with_ai(log: str, provider_name: str = None) -> dict:
                        If None, auto-detects from env vars.
 
     Returns:
-        dict with keys: root_cause, fix, prevention
+        dict with keys: root_cause, fix, prevention, confidence
     """
     try:
         provider = get_provider(provider_name)
@@ -62,12 +62,14 @@ def analyze_with_ai(log: str, provider_name: str = None) -> dict:
         return {
             "root_cause": str(e),
             "fix": "",
-            "prevention": ""
+            "prevention": "",
+            "confidence": "low"
         }
 
     except Exception as e:
         return {
             "root_cause": "AI analysis failed.",
             "fix": str(e),
-            "prevention": "Check your API key and network connection."
+            "prevention": "Check your API key and network connection.",
+            "confidence": "low"
         }
