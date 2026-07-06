@@ -23,7 +23,7 @@ jobs:
 
       - name: Install DebugAI
         run: |
-          pip install git+https://github.com/kanhaiya-bhayana/debugai.git
+          pip install git+https://github.com/kanhaiya-bhayana/debuai.git
           pip install openai
 
       # ✅ Create a realistic test log
@@ -35,6 +35,7 @@ jobs:
 
           System.NullReferenceException
           at OrderService.CalculateTotal()
+          EOF
 
       # ✅ Debug: show what DebugAI will receive
       - name: Show logs
@@ -48,7 +49,7 @@ jobs:
         env:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         run: |
-          cat logs.txt | debugai --ai > debugai_output.txt || true
+          cat logs.txt | debuai --ai > debugai_output.txt || true
 
       - name: Comment on PR (only if error exists)
         if: github.event_name == 'pull_request'
