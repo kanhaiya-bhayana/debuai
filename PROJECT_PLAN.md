@@ -13,7 +13,7 @@ Goal: Build a working AI-powered CLI stack trace analyzer.
 ## Core CLI
 - [x] CLI interface using Typer
 - [x] Local installation via pip
-- [x] Command: `debugai error.log`
+- [x] Command: `debuai error.log`
 
 ## Stack Trace Parsing
 - [x] Extract exception type
@@ -44,15 +44,15 @@ Goal: Make DebugAI useful in real developer environments.
 ## Input Handling
 - [x] Support input from STDIN  
   Example:  
-  `cat error.log | debugai --ai`
+  `cat error.log | debuai --ai`
 
 - [x] Allow direct error message input  
   Example:  
-  `debugai "NullReferenceException at TradeService"`
+  `debuai "NullReferenceException at TradeService"`
 
 - [x] Clipboard support (macOS)  
   Example:  
-  `pbpaste | debugai --ai`
+  `pbpaste | debuai --ai`
 
 ## Log Analysis
 - [x] Detect stack traces inside raw logs
@@ -60,12 +60,14 @@ Goal: Make DebugAI useful in real developer environments.
 - [x] Highlight the most relevant stack trace
 
 ## Language Support
-- [ ] Python stack traces
-- [ ] Java stack traces
-- [ ] Node.js stack traces
+- [x] Python stack traces
+- [x] Java stack traces
+- [x] Node.js stack traces
+- [x] Go stack traces
+- [x] C# / .NET stack traces
 
 ## AI Improvements
-- [ ] Confidence score for AI diagnosis
+- [x] Confidence score for AI diagnosis
 - [ ] Structured AI reasoning steps
 - [ ] Better prompt design for debugging context
 

@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/debuai.svg)](https://pypi.org/project/debuai/)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/kanhaiya-bhayana/debugai/actions/workflows/main.yml/badge.svg)](https://github.com/kanhaiya-bhayana/debugai/actions)
+[![CI](https://github.com/kanhaiya-bhayana/debuai/actions/workflows/debugai.yml/badge.svg)](https://github.com/kanhaiya-bhayana/debuai/actions)
 
 **AI-powered CLI tool that turns any stack trace into a root cause analysis — in seconds.**
 
@@ -172,8 +172,8 @@ Add DebugAI to your GitHub Actions workflow to get AI analysis on every failed b
 ## Setup for Development
 
 ```bash
-git clone https://github.com/kanhaiya-bhayana/debugai.git
-cd debugai
+git clone https://github.com/kanhaiya-bhayana/debuai.git
+cd debuai
 python -m venv venv
 source venv/bin/activate        # Mac/Linux
 venv\Scripts\activate           # Windows
