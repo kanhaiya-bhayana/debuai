@@ -15,7 +15,7 @@ class PythonParser(StackTraceParser):
 
     def extract_frames(self, log: str):
         frames = re.findall(r'File ".+", line \d+, in ([^\n]+)', log)
-        return list(reversed(frames))  # innermost first, consistent with CSharpJavaParser
+        return list(reversed(frames))  # innermost first (failure origin at index 0)
 
     def extract_exception_type(self, log: str):
         # Match the final line: ExceptionType: message  OR  ExceptionType alone

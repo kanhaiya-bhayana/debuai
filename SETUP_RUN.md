@@ -17,9 +17,9 @@ Optional (for AI features):
 ## 📦 Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/debugai.git
-cd debugai
-````
+git clone https://github.com/kanhaiya-bhayana/debuai.git
+cd debuai
+```
 
 ---
 
@@ -59,13 +59,13 @@ source ~/.zshrc
 ### 1️⃣ Using a File
 
 ```bash
-debugai examples/error.log
+debuai examples/python_error.log
 ```
 
 ### 2️⃣ With AI Analysis
 
 ```bash
-debugai examples/error.log --ai
+debuai examples/python_error.log --ai
 ```
 
 ---
@@ -75,13 +75,13 @@ debugai examples/error.log --ai
 ### From a file
 
 ```bash
-cat examples/error.log | debugai
+cat examples/python_error.log | debuai
 ```
 
 ### With AI
 
 ```bash
-cat examples/error.log | debugai --ai
+cat examples/python_error.log | debuai --ai
 ```
 
 ---
@@ -89,7 +89,7 @@ cat examples/error.log | debugai --ai
 ## ✏️ Direct Input
 
 ```bash
-debugai "NullReferenceException at OrderService.CalculateTotal()"
+debuai "NullReferenceException at OrderService.CalculateTotal()"
 ```
 
 ---
@@ -97,7 +97,7 @@ debugai "NullReferenceException at OrderService.CalculateTotal()"
 ## 📋 Clipboard Support (macOS)
 
 ```bash
-pbpaste | debugai --ai
+pbpaste | debuai --ai
 ```
 
 ---
@@ -107,7 +107,7 @@ pbpaste | debugai --ai
 You can test using:
 
 ```
-examples/error.log
+examples/python_error.log
 ```
 
 Example content:
@@ -138,7 +138,7 @@ DebugAI will:
 
 ## ❗ Troubleshooting
 
-### Command not found: debugai
+### Command not found: debuai
 
 Add Python scripts to PATH:
 
@@ -171,7 +171,7 @@ If empty, set it again.
 Run:
 
 ```bash
-debugai --help
+debuai --help
 ```
 
 If this works, setup is complete 🎉

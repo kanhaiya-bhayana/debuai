@@ -9,6 +9,24 @@ permissions:
   pull-requests: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install with dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run test suite
+        run: python -m pytest tests/ -v
+
   debugai:
     runs-on: ubuntu-latest
 
@@ -23,7 +41,7 @@ jobs:
 
       - name: Install DebugAI
         run: |
-          pip install git+https://github.com/kanhaiya-bhayana/debugai.git
+          pip install git+https://github.com/kanhaiya-bhayana/debuai.git
           pip install openai
 
       # ✅ Create a realistic test log
@@ -35,6 +53,7 @@ jobs:
 
           System.NullReferenceException
           at OrderService.CalculateTotal()
+          EOF
 
       # ✅ Debug: show what DebugAI will receive
       - name: Show logs
@@ -48,7 +67,7 @@ jobs:
         env:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         run: |
-          cat logs.txt | debugai --ai > debugai_output.txt || true
+          cat logs.txt | debuai --ai > debugai_output.txt || true
 
       - name: Comment on PR (only if error exists)
         if: github.event_name == 'pull_request'
