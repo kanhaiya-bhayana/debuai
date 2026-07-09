@@ -67,7 +67,7 @@ jobs:
         env:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         run: |
-          cat logs.txt | debuai --ai > debugai_output.txt || true
+          cat logs.txt | debuai --ai --issues > debugai_output.txt || true
 
       - name: Comment on PR (only if error exists)
         if: github.event_name == 'pull_request'
