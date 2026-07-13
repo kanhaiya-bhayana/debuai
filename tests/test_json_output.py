@@ -88,6 +88,19 @@ class TestParseResponseMalformed:
         assert result["root_cause"] == "NPE"
         assert result["confidence"] == "high"
 
+    def test_nested_json_block_inside_prose(self):
+        """Nested JSON wrapped in prose — greedy extraction must capture the
+        full object, not truncate at the first inner '}'."""
+        raw = (
+            'Sure, here is the analysis:\n'
+            '{"root_cause": "NPE", "fix": "check null", "prevention": "use optional", '
+            '"confidence": "high", "context": {"file": "a.py", "line": 42}}\n'
+            'Let me know if you need more.'
+        )
+        result = provider.parse_response(raw)
+        assert result["root_cause"] == "NPE"
+        assert result["confidence"] == "high"
+
     def test_plain_text_fallback(self):
         """If no JSON at all, root_cause should contain the raw text."""
         raw = "The error is caused by a missing null check."
