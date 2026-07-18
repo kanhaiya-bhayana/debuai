@@ -56,7 +56,7 @@ Stack trace:
 
         Priority:
           1. Strict JSON parse
-          2. Extract first { } block (handles models that add commentary)
+          2. Extract the { } block (handles models that add commentary)
           3. Graceful fallback — return raw text as root_cause
 
         Always guarantees keys: root_cause, fix, prevention, confidence.
@@ -80,8 +80,10 @@ Stack trace:
         except (json.JSONDecodeError, ValueError):
             pass
 
-        # 2. Extract first JSON block
-        match = re.search(r"\{.*?\}", text, re.DOTALL)
+        # 2. Extract the JSON block (first '{' to last '}', so nested
+        #    objects wrapped in commentary survive rather than truncating
+        #    at the first inner '}').
+        match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:
             try:
                 result = json.loads(match.group())
