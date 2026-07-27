@@ -3,7 +3,6 @@ import os
 import json
 import typer
 import random
-import subprocess
 from debugai.constants.spinner_verbs import SPINNER_VERBS
 from debugai.constants.completion_spinner import COMPLETION_PHRASES
 from rich.console import Console
@@ -13,6 +12,7 @@ from debugai.analyzer import extract_all_stack_traces, explain_error
 from debugai.ai_analyzer import analyze_with_ai
 from debugai.scorer.relevance import select_most_relevant
 from debugai.issue_search import search_github_issues
+from debugai.clipboard import read_clipboard, ClipboardError
 
 app = typer.Typer()
 console = Console()
@@ -70,10 +70,10 @@ def explain(
     # ── Input resolution ──────────────────────────────────────────────
     if paste:
         try:
-            log = subprocess.check_output("pbpaste").decode("utf-8")
-        except Exception:
+            log = read_clipboard()
+        except ClipboardError as e:
             if not json_output:
-                console.print("[red]Failed to read clipboard[/red]")
+                console.print(f"[red]{e}[/red]")
             raise typer.Exit()
 
     elif not sys.stdin.isatty():

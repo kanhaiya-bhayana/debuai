@@ -94,11 +94,18 @@ debuai "NullReferenceException at OrderService.CalculateTotal()"
 
 ---
 
-## 📋 Clipboard Support (macOS)
+## 📋 Clipboard Support
+
+Use the `--paste` flag to read the error straight from your clipboard —
+works on macOS, Windows, and Linux:
 
 ```bash
-pbpaste | debuai --ai
+debuai --paste --ai
 ```
+
+Under the hood it uses the platform's native tool: `pbpaste` (macOS),
+`Get-Clipboard` (Windows), and `wl-paste`/`xclip`/`xsel` (Linux — install one
+of `wl-clipboard`, `xclip`, or `xsel` if none is present).
 
 ---
 
