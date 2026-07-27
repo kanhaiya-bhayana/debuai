@@ -101,16 +101,30 @@ class TestMissingApiKey:
         assert len(result["root_cause"]) > 10
 
     def test_unknown_provider_returns_friendly_message(self, monkeypatch):
-        """Requesting a nonexistent provider must not crash."""
+        """A nonexistent provider must not crash, and must not be mislabelled
+        as a runtime 'AI analysis failed' — it's a config error."""
         result = analyze_with_ai("some trace", provider_name="nonexistent_provider")
         assert isinstance(result, dict)
-        assert "root_cause" in result
+        assert "Unknown provider" in result["root_cause"]
+        assert "nonexistent_provider" in result["root_cause"]
+        assert result["root_cause"] != "AI analysis failed."
+        assert result["confidence"] == "low"
 
     def test_wrong_provider_name_returns_friendly_message(self, monkeypatch):
-        """Typo in --provider must not crash."""
+        """Typo in --provider surfaces the available providers, not a stack error."""
         result = analyze_with_ai("some trace", provider_name="gpt5")
-        assert isinstance(result, dict)
-        assert "root_cause" in result
+        assert "Unknown provider" in result["root_cause"]
+        assert "gpt5" in result["root_cause"]
+        # The actionable list of valid providers should be in the message.
+        for name in ("openai", "anthropic", "nvidia"):
+            assert name in result["root_cause"]
+
+    def test_requested_provider_without_key_names_the_env_var(self, monkeypatch):
+        """--provider openai with no key should tell the user which var to set."""
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        result = analyze_with_ai("some trace", provider_name="openai")
+        assert "OPENAI_API_KEY" in result["root_cause"]
+        assert result["confidence"] == "low"
 
 
 # ── Unrecognised format ───────────────────────────────────────────────────────

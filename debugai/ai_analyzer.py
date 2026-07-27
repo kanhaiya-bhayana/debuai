@@ -58,7 +58,10 @@ def analyze_with_ai(log: str, provider_name: str = None) -> dict:
         raw = provider.analyze(prompt)
         return provider.parse_response(raw)
 
-    except EnvironmentError as e:
+    except (EnvironmentError, ValueError) as e:
+        # Configuration problem (missing API key, or an unknown/typo'd
+        # --provider). Surface the actionable message directly instead of
+        # labelling it an "AI analysis failed" runtime error.
         return {
             "root_cause": str(e),
             "fix": "",
