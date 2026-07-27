@@ -66,6 +66,8 @@ jobs:
       - name: Run DebugAI
         env:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          # Authenticates the --issues GitHub search (30 req/min vs 10).
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           cat logs.txt | debuai --ai --issues > debugai_output.txt || true
 
