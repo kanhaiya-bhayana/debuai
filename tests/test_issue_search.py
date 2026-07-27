@@ -280,3 +280,55 @@ class TestFetchIssues:
         _fetch_issues("ValueError")
         _fetch_issues("  valueerror ")  # same key after lower().strip()
         assert calls["n"] == 1
+
+    # ── authentication ────────────────────────────────────────────────────────
+
+    def _capture_headers(self, monkeypatch):
+        captured = {}
+
+        def opener(req, timeout=None):
+            captured["headers"] = req.headers
+            return _FakeResponse(json.dumps({"items": []}).encode())
+
+        self._patch(monkeypatch, opener)
+        return captured
+
+    def test_sends_bearer_auth_when_token_present(self, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "ghp_secret123")
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+        captured = self._capture_headers(monkeypatch)
+        _fetch_issues("ValueError")
+        assert captured["headers"].get("Authorization") == "Bearer ghp_secret123"
+
+    def test_no_auth_header_without_token(self, monkeypatch):
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+        captured = self._capture_headers(monkeypatch)
+        _fetch_issues("ValueError")
+        assert "Authorization" not in captured["headers"]
+        assert not any("Bearer" in str(v) for v in captured["headers"].values())
+
+    def test_gh_token_used_when_github_token_absent(self, monkeypatch):
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.setenv("GH_TOKEN", "gh_fallback")
+        captured = self._capture_headers(monkeypatch)
+        _fetch_issues("ValueError")
+        assert captured["headers"].get("Authorization") == "Bearer gh_fallback"
+
+
+class TestGithubToken:
+
+    def test_prefers_github_token_over_gh_token(self, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "primary")
+        monkeypatch.setenv("GH_TOKEN", "secondary")
+        assert issue_search._github_token() == "primary"
+
+    def test_falls_back_to_gh_token(self, monkeypatch):
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.setenv("GH_TOKEN", "secondary")
+        assert issue_search._github_token() == "secondary"
+
+    def test_empty_when_neither_set(self, monkeypatch):
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+        assert issue_search._github_token() == ""

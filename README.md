@@ -125,6 +125,23 @@ Auto-detection order: **OpenAI → Anthropic → NVIDIA**. Override with `--prov
 
 ---
 
+## GitHub Issue Search
+
+Add `--issues` to find GitHub issues related to the detected exception:
+
+```bash
+debuai error.log --issues
+```
+
+No setup required, but it's bound by GitHub's **unauthenticated** search quota
+(10 req/min). Set a token to raise it to 30 req/min:
+
+```bash
+export GITHUB_TOKEN=...   # or GH_TOKEN (a read-only token is enough)
+```
+
+---
+
 ## JSON Output
 
 The `--json` flag outputs clean, pipeable JSON — no Rich formatting, no colour codes.
@@ -225,7 +242,7 @@ tests/
 - [x] Structured JSON output
 - [x] CI/CD pipeline
 - [x] PyPI publish
-- [ ] GitHub issue search — link traces to known issues automatically
+- [x] GitHub issue search — link traces to known issues automatically
 - [ ] Kubernetes / Docker log stream support
 - [ ] VS Code extension
 - [ ] Web UI for team sharing

@@ -1,3 +1,4 @@
+import os
 import re
 import time
 import urllib.request
@@ -8,8 +9,19 @@ import json
 # Simple in-session cache — avoids duplicate API calls for the same exception
 _cache: dict = {}
 
-# GitHub unauthenticated rate limit: 10 req/min
+# GitHub search rate limit: 10 req/min unauthenticated, 30 req/min with a token.
 _RATE_LIMIT_DELAY = 1.2  # seconds between requests to stay safe
+
+
+def _github_token() -> str:
+    """
+    Return a GitHub token from the environment, if present.
+
+    Checks GITHUB_TOKEN first (GitHub Actions default), then GH_TOKEN
+    (the gh CLI convention). Returns '' when neither is set — the request
+    then goes out unauthenticated, as before.
+    """
+    return os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN") or ""
 
 
 def _build_query(exception_type: str, top_frame: str) -> str:
@@ -51,10 +63,18 @@ def _fetch_issues(query: str) -> list:
     })
 
     url = f"https://api.github.com/search/issues?{params}"
-    req = urllib.request.Request(url, headers={
+
+    headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": "debuai-cli/0.1.1"
-    })
+        "User-Agent": "debuai-cli/0.1.1",
+    }
+    # An optional token authenticates the request, raising GitHub's search
+    # rate limit from 10 req/min (unauthenticated) to 30 req/min.
+    token = _github_token()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    req = urllib.request.Request(url, headers=headers)
 
     try:
         time.sleep(_RATE_LIMIT_DELAY)
