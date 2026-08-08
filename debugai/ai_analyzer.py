@@ -40,6 +40,28 @@ def get_provider(name: str = None):
     )
 
 
+def _providers_to_try(name: str = None) -> list:
+    """
+    Resolve the ordered list of providers to attempt.
+
+    - Explicit `name`: exactly that one provider — honoured as-is, with NO
+      failover (the user made a deliberate choice).
+    - Auto (name is None): every available provider in priority order, so a
+      provider whose API call fails falls over to the next one.
+
+    Raises EnvironmentError / ValueError for the same configuration problems
+    as get_provider (unknown provider, requested provider missing its key,
+    or no provider configured at all).
+    """
+    if name:
+        return [get_provider(name)]
+
+    available = [p for p in PROVIDERS if p.is_available()]
+    if not available:
+        get_provider(None)  # delegate for the canonical "no provider" error
+    return available
+
+
 def analyze_with_ai(log: str, provider_name: str = None) -> dict:
     """
     Run AI analysis on a stack trace.
@@ -47,16 +69,14 @@ def analyze_with_ai(log: str, provider_name: str = None) -> dict:
     Args:
         log:           The raw stack trace string.
         provider_name: Optional override ("openai", "anthropic", "nvidia").
-                       If None, auto-detects from env vars.
+                       If None, auto-detects from env vars and fails over
+                       across all available providers on error.
 
     Returns:
         dict with keys: root_cause, fix, prevention, confidence
     """
     try:
-        provider = get_provider(provider_name)
-        prompt = provider.build_prompt(log)
-        raw = provider.analyze(prompt)
-        return provider.parse_response(raw)
+        providers = _providers_to_try(provider_name)
 
     except (EnvironmentError, ValueError) as e:
         # Configuration problem (missing API key, or an unknown/typo'd
@@ -69,10 +89,20 @@ def analyze_with_ai(log: str, provider_name: str = None) -> dict:
             "confidence": "low"
         }
 
-    except Exception as e:
-        return {
-            "root_cause": "AI analysis failed.",
-            "fix": str(e),
-            "prevention": "Check your API key and network connection.",
-            "confidence": "low"
-        }
+    # Try each provider in order; on failure fall over to the next.
+    last_error = None
+    for provider in providers:
+        try:
+            prompt = provider.build_prompt(log)
+            raw = provider.analyze(prompt)
+            return provider.parse_response(raw)
+        except Exception as e:  # noqa: BLE001 — record and try the next provider
+            last_error = e
+            continue
+
+    return {
+        "root_cause": "AI analysis failed.",
+        "fix": str(last_error) if last_error else "",
+        "prevention": "Check your API key and network connection.",
+        "confidence": "low"
+    }
