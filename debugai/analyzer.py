@@ -6,45 +6,61 @@ from debugai.parser.registry import get_parser
 # Java/C#-style exceptions (NullReferenceException, IOException)
 _EXCEPTION_PATTERN = re.compile(r'\w+(?:Exception|Error)')
 
+# A Go trace opens with a panic / fatal-error line. Unlike Python/Java it then
+# has an internal blank line before its goroutine dump, so it needs special
+# handling in the block splitter below.
+_GO_TRACE_START = re.compile(r'^\s*(?:panic:|fatal error:)')
+
+
+def _has_go_body(lines) -> bool:
+    """True once a Go trace's goroutine dump / .go frames have been captured."""
+    return any(".go:" in l or l.lstrip().startswith("goroutine ") for l in lines)
+
 
 def extract_all_stack_traces(log: str):
     """
     Extract multiple stack traces from a log string.
-    Handles Python (Traceback header), C#/Java, and Node.js formats.
+    Handles Python (Traceback header), C#/Java/Node (exception on its own line),
+    and Go (panic:/fatal error: followed by a goroutine dump).
     """
     lines = log.splitlines()
     traces = []
     current_trace = []
     capture = False
+    go_mode = False  # Go traces span an internal blank line
+
+    def flush():
+        nonlocal current_trace
+        if current_trace:
+            traces.append("\n".join(current_trace))
+            current_trace = []
 
     for line in lines:
 
         # Python traceback starts with a dedicated header
         if "Traceback (most recent call last)" in line:
-            if current_trace:
-                traces.append("\n".join(current_trace))
-                current_trace = []
-            capture = True
+            flush()
+            capture, go_mode = True, False
 
-        # C# / Java / Node: exception type on its own line triggers capture
-        elif _EXCEPTION_PATTERN.search(line) and not capture:
-            if current_trace:
-                traces.append("\n".join(current_trace))
-                current_trace = []
+        # C# / Java / Node exception, or a Go panic, on its own line starts a block
+        elif not capture and (_EXCEPTION_PATTERN.search(line) or _GO_TRACE_START.search(line)):
+            flush()
             capture = True
+            go_mode = bool(_GO_TRACE_START.search(line))
 
         if capture:
             current_trace.append(line)
 
-            # End condition: blank line signals end of trace block
+            # A blank line ends the block — except the internal blank inside a Go
+            # panic, before its goroutine dump has been captured.
             if line.strip() == "":
-                traces.append("\n".join(current_trace))
-                current_trace = []
-                capture = False
+                if go_mode and not _has_go_body(current_trace):
+                    continue
+                flush()
+                capture, go_mode = False, False
 
     # Flush any trailing trace that wasn't followed by a blank line
-    if current_trace:
-        traces.append("\n".join(current_trace))
+    flush()
 
     return traces
 
