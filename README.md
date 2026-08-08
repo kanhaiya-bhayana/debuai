@@ -122,6 +122,8 @@ export NVIDIA_API_KEY=...       # Uses NVIDIA inference
 ```
 
 Auto-detection order: **OpenAI → Anthropic → NVIDIA**. Override with `--provider`.
+When auto-detecting, if one provider's call fails DebugAI automatically falls
+over to the next available one. (An explicit `--provider` is used as-is.)
 
 ---
 
