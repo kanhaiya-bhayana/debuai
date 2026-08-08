@@ -153,6 +153,20 @@ def detect_source_file(log: str, origin: str) -> str:
     return "Unknown file"
 
 
+def detect_location(log):
+    """
+    Return (file, line, function) for the failure frame via the language
+    parser, or (None, None, None) when unavailable (e.g. Node, or no match).
+    """
+    parser = get_parser(log)
+    if parser and hasattr(parser, "extract_location"):
+        try:
+            return parser.extract_location(log)
+        except Exception:
+            pass
+    return None, None, None
+
+
 def extract_stack_trace_from_log(log: str):
     """
     Extracts the first stack trace found in raw logs.
