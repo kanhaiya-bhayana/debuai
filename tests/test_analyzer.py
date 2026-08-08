@@ -184,6 +184,57 @@ class TestExtractAllStackTraces:
         assert len(traces) >= 1
         assert "NullReferenceException" in traces[0]
 
+    def test_go_trace_detected_as_single_block(self):
+        """A Go panic + its goroutine dump (with an internal blank line) must be
+        captured as ONE block — previously it was dropped entirely."""
+        go_log = (
+            "panic: runtime error: index out of range [3] with length 3\n"
+            "\n"
+            "goroutine 1 [running]:\n"
+            "main.processItems(0xc000012080, 0x3, 0x3)\n"
+            "\t/home/user/app/processor.go:22 +0x1d\n"
+            "main.main()\n"
+            "\t/home/user/app/main.go:5 +0x25\n"
+        )
+        traces = extract_all_stack_traces(go_log)
+        assert len(traces) == 1
+        assert "panic:" in traces[0]
+        assert "processor.go" in traces[0]  # goroutine dump kept in the same block
+
+    def test_go_block_parses_end_to_end(self):
+        go_log = (
+            "panic: runtime error: index out of range [3] with length 3\n"
+            "\n"
+            "goroutine 1 [running]:\n"
+            "main.processItems(0xc000012080, 0x3, 0x3)\n"
+            "\t/home/user/app/processor.go:22 +0x1d\n"
+        )
+        traces = extract_all_stack_traces(go_log)
+        assert len(traces) == 1
+        assert explain_error(traces[0])["exception"] != "UnknownException"
+
+    def test_mixed_language_log_splits_per_block(self):
+        mixed = (
+            'Traceback (most recent call last):\n'
+            '  File "app.py", line 3, in main\n'
+            '    x = int(raw)\n'
+            'ValueError: bad int\n'
+            '\n'
+            'Exception in thread "main" java.lang.NullPointerException\n'
+            '    at com.example.OrderService.calc(OrderService.java:42)\n'
+            '\n'
+            'panic: runtime error: index out of range\n'
+            '\n'
+            'goroutine 1 [running]:\n'
+            'main.handler()\n'
+            '\t/app/main.go:20 +0x1d\n'
+        )
+        traces = extract_all_stack_traces(mixed)
+        assert len(traces) == 3
+        assert "ValueError" in traces[0]
+        assert "NullPointerException" in traces[1]
+        assert "panic:" in traces[2] and "main.go" in traces[2]
+
 
 # ── explain_error (integration) ───────────────────────────────────────────────
 
