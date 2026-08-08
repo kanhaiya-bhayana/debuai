@@ -24,7 +24,18 @@ def _github_token() -> str:
     return os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN") or ""
 
 
-def _build_query(exception_type: str, top_frame: str) -> str:
+# Map DebugAI's internal language ids (from cli._detect_language) to the tokens
+# GitHub's `language:` search qualifier understands.
+_GH_LANGUAGE = {
+    "python": "python",
+    "java": "java",
+    "go": "go",
+    "node": "javascript",
+    "csharp": "csharp",
+}
+
+
+def _build_query(exception_type: str, top_frame: str, language: str = None) -> str:
     """
     Build a focused GitHub issue search query.
 
@@ -32,6 +43,9 @@ def _build_query(exception_type: str, top_frame: str) -> str:
     - Always include exception type (most specific signal)
     - Include top frame method name if it looks like user code
       (skip generic names like 'main', 'run', 'execute')
+    - Scope to the detected language via GitHub's `language:` qualifier when
+      we recognise it, to filter out cross-language noise. Unknown/unmapped
+      languages are simply left unscoped.
     """
     GENERIC_FRAMES = {"main", "run", "execute", "start", "init", "call", "handle"}
 
@@ -42,6 +56,10 @@ def _build_query(exception_type: str, top_frame: str) -> str:
         method = top_frame.split(".")[-1].strip("()")
         if method and len(method) > 2:
             parts.append(method)
+
+    gh_lang = _GH_LANGUAGE.get((language or "").lower())
+    if gh_lang:
+        parts.append(f"language:{gh_lang}")
 
     return " ".join(parts)
 
@@ -127,13 +145,15 @@ def _score_issue(issue: dict, exception_type: str) -> int:
     return score
 
 
-def search_github_issues(exception_type: str, top_frame: str) -> list:
+def search_github_issues(exception_type: str, top_frame: str, language: str = None) -> list:
     """
     Search GitHub for issues related to this exception.
 
     Args:
         exception_type: e.g. "ValueError", "NullPointerException"
         top_frame:      e.g. "parse_input", "OrderService.calculateTotal"
+        language:       optional detected language (e.g. "python") used to
+                        scope results via GitHub's `language:` qualifier.
 
     Returns:
         List of up to 3 dicts, each with:
@@ -142,7 +162,7 @@ def search_github_issues(exception_type: str, top_frame: str) -> list:
     if not exception_type or exception_type == "UnknownException":
         return []
 
-    query   = _build_query(exception_type, top_frame)
+    query   = _build_query(exception_type, top_frame, language)
     raw     = _fetch_issues(query)
 
     if not raw:

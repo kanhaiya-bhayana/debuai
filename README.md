@@ -133,6 +133,9 @@ Add `--issues` to find GitHub issues related to the detected exception:
 debuai error.log --issues
 ```
 
+Results are automatically scoped to the **detected language** (via GitHub's
+`language:` qualifier) to cut cross-language noise.
+
 No setup required, but it's bound by GitHub's **unauthenticated** search quota
 (10 req/min). Set a token to raise it to 30 req/min:
 
