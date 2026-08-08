@@ -49,6 +49,22 @@ class TestBuildQuery:
         q = _build_query("UnknownException", "some_func")
         assert q is not None
 
+    def test_scopes_by_detected_language(self):
+        q = _build_query("ValueError", "parse_input", language="python")
+        assert "language:python" in q
+
+    def test_node_maps_to_javascript(self):
+        q = _build_query("TypeError", "handler", language="node")
+        assert "language:javascript" in q
+
+    def test_no_language_leaves_query_unscoped(self):
+        q = _build_query("ValueError", "parse_input")
+        assert "language:" not in q
+
+    def test_unrecognised_language_left_unscoped(self):
+        q = _build_query("ValueError", "parse_input", language="ruby")
+        assert "language:" not in q
+
 
 # ── _score_issue ──────────────────────────────────────────────────────────────
 
@@ -164,6 +180,18 @@ class TestSearchGithubIssues:
         if len(results) >= 2:
             closed = [r for r in results if r["state"] == "closed"]
             assert len(closed) > 0
+
+    def test_language_scopes_the_search_query(self, monkeypatch):
+        """The detected language must reach the GitHub query as a language: qualifier."""
+        captured = {}
+
+        def fake_fetch(query):
+            captured["query"] = query
+            return []
+
+        monkeypatch.setattr("debugai.issue_search._fetch_issues", fake_fetch)
+        search_github_issues("ValueError", "parse_input", language="python")
+        assert "language:python" in captured["query"]
 
 
 # ── _fetch_issues (urllib mocked) ─────────────────────────────────────────────

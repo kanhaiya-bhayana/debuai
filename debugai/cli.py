@@ -130,7 +130,7 @@ def explain(
                 }
             if issues:
                 github_issues = search_github_issues(
-                    result["exception"], result["origin"]
+                    result["exception"], result["origin"], entry["language"]
                 )
                 entry["github_issues"] = github_issues
 
@@ -178,13 +178,13 @@ def explain(
             console.print(f"[green]🍳 {phrase}![/green]")
 
         if issues:
-            _render_issues(result["exception"], result["origin"])
+            _render_issues(result["exception"], result["origin"], _detect_language(trace))
 
 
-def _render_issues(exception_type: str, top_frame: str):
+def _render_issues(exception_type: str, top_frame: str, language: str = None):
     """Fetch and render related GitHub issues in a Rich table."""
     with console.status("[bold blue]🔍 Searching GitHub issues..."):
-        results = search_github_issues(exception_type, top_frame)
+        results = search_github_issues(exception_type, top_frame, language)
 
     if not results:
         console.print(
