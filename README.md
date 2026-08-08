@@ -147,6 +147,21 @@ export GITHUB_TOKEN=...   # or GH_TOKEN (a read-only token is enough)
 
 ---
 
+## Source Context
+
+Pass `--context` (`-c`) to pull the actual source code around the failing line
+straight from disk — shown as a panel, and fed into the `--ai` prompt for a
+sharper diagnosis:
+
+```bash
+debuai error.log --ai --context
+```
+
+Only works when the referenced files exist on the machine running DebugAI; if a
+file isn't found (e.g. a log from another host), the section is silently skipped.
+
+---
+
 ## JSON Output
 
 The `--json` flag outputs clean, pipeable JSON — no Rich formatting, no colour codes.

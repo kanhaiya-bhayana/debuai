@@ -23,7 +23,7 @@ class FakeProvider:
     def is_available(self):
         return self._available
 
-    def build_prompt(self, log):
+    def build_prompt(self, log, source_context=None):
         return log
 
     def analyze(self, prompt):

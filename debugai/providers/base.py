@@ -24,7 +24,14 @@ class AIProvider(ABC):
     #  Prompt                                                             #
     # ------------------------------------------------------------------ #
 
-    def build_prompt(self, log: str) -> str:
+    def build_prompt(self, log: str, source_context: str = None) -> str:
+        source_section = ""
+        if source_context:
+            source_section = (
+                "\nRelevant source code near the failure "
+                "('->' marks the failing line):\n"
+                f"{source_context}\n"
+            )
         return f"""You are a senior software engineer debugging a production issue.
 
 Respond ONLY with a JSON object — no explanation, no markdown, no code fences.
@@ -44,7 +51,7 @@ Confidence guide:
 
 Stack trace:
 {log}
-"""
+{source_section}"""
 
     # ------------------------------------------------------------------ #
     #  Response parsing                                                   #

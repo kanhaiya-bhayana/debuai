@@ -141,3 +141,12 @@ class TestBuildPrompt:
         prompt = provider.build_prompt("some trace")
         # Must instruct model to return only JSON
         assert "ONLY" in prompt or "only" in prompt
+
+    def test_prompt_includes_source_context_when_provided(self):
+        prompt = provider.build_prompt("some trace", source_context="-> 4 | return int(raw)")
+        assert "return int(raw)" in prompt
+        assert "source code" in prompt.lower()
+
+    def test_prompt_omits_source_section_when_absent(self):
+        prompt = provider.build_prompt("some trace")
+        assert "source code" not in prompt.lower()

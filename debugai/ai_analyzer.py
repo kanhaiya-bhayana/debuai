@@ -62,15 +62,17 @@ def _providers_to_try(name: str = None) -> list:
     return available
 
 
-def analyze_with_ai(log: str, provider_name: str = None) -> dict:
+def analyze_with_ai(log: str, provider_name: str = None, source_context: str = None) -> dict:
     """
     Run AI analysis on a stack trace.
 
     Args:
-        log:           The raw stack trace string.
-        provider_name: Optional override ("openai", "anthropic", "nvidia").
-                       If None, auto-detects from env vars and fails over
-                       across all available providers on error.
+        log:            The raw stack trace string.
+        provider_name:  Optional override ("openai", "anthropic", "nvidia").
+                        If None, auto-detects from env vars and fails over
+                        across all available providers on error.
+        source_context: Optional local source snippet around the failure,
+                        included in the prompt to sharpen the diagnosis.
 
     Returns:
         dict with keys: root_cause, fix, prevention, confidence
@@ -93,7 +95,7 @@ def analyze_with_ai(log: str, provider_name: str = None) -> dict:
     last_error = None
     for provider in providers:
         try:
-            prompt = provider.build_prompt(log)
+            prompt = provider.build_prompt(log, source_context)
             raw = provider.analyze(prompt)
             return provider.parse_response(raw)
         except Exception as e:  # noqa: BLE001 — record and try the next provider

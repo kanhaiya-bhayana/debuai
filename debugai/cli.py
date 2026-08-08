@@ -8,11 +8,12 @@ from debugai.constants.completion_spinner import COMPLETION_PHRASES
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from debugai.analyzer import extract_all_stack_traces, explain_error
+from debugai.analyzer import extract_all_stack_traces, explain_error, detect_location
 from debugai.ai_analyzer import analyze_with_ai
 from debugai.scorer.relevance import select_most_relevant
 from debugai.issue_search import search_github_issues
 from debugai.clipboard import read_clipboard, ClipboardError
+from debugai.source_context import read_source_context
 
 app = typer.Typer()
 console = Console()
@@ -57,6 +58,12 @@ def explain(
         False,
         "--issues",
         help="Search GitHub for related issues"
+    ),
+    context: bool = typer.Option(
+        False,
+        "--context",
+        "-c",
+        help="Include local source code around the failure (reads the file from disk)"
     ),
 ):
     MAX_LINES = 300
@@ -120,8 +127,14 @@ def explain(
                 "source_file":     result["source"],
                 "language":        _detect_language(trace),
             }
+            if context:
+                loc_file, loc_line, _ = detect_location(trace)
+                entry["source_context"] = read_source_context(loc_file, loc_line)
             if ai:
-                ai_result = analyze_with_ai(trace, provider_name=provider)
+                ai_result = analyze_with_ai(
+                    trace, provider_name=provider,
+                    source_context=entry.get("source_context"),
+                )
                 entry["ai"] = {
                     "root_cause":  ai_result.get("root_cause", ""),
                     "fix":         ai_result.get("fix", ""),
@@ -148,10 +161,17 @@ def explain(
         console.print(Panel(result["origin"],    title="📍 Failure Origin", title_align="left"))
         console.print(Panel(result["chain"],     title="🔗 Execution Chain", title_align="left"))
 
+        snippet = None
+        if context:
+            loc_file, loc_line, _ = detect_location(trace)
+            snippet = read_source_context(loc_file, loc_line)
+            if snippet:
+                console.print(Panel(snippet, title="📄 Source Context", title_align="left"))
+
         if ai:
             verb = random.choice(SPINNER_VERBS)
             with console.status(f"[bold cyan]🧠 {verb}..."):
-                ai_result = analyze_with_ai(trace, provider_name=provider)
+                ai_result = analyze_with_ai(trace, provider_name=provider, source_context=snippet)
 
             confidence = ai_result.get("confidence", "low")
             style = _CONFIDENCE_STYLE.get(confidence, "bold red")
