@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from debugai.analyzer import extract_all_stack_traces, explain_error, detect_location
+from debugai.parser.registry import detect_language
 from debugai.ai_analyzer import analyze_with_ai
 from debugai.scorer.relevance import select_most_relevant
 from debugai.issue_search import search_github_issues
@@ -247,12 +248,5 @@ def _render_issues(exception_type: str, top_frame: str, language: str = None):
 
 
 def _detect_language(trace: str) -> str:
-    if "Traceback (most recent call last)" in trace:
-        return "python"
-    if ".java:" in trace:
-        return "java"
-    if "goroutine" in trace or "panic:" in trace:
-        return "go"
-    if ".js:" in trace:
-        return "node"
-    return "csharp"
+    # Single source of truth: the same parser registry that parses the trace.
+    return detect_language(trace) or "unknown"

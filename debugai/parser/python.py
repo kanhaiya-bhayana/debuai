@@ -4,6 +4,8 @@ from .base import StackTraceParser
 
 class PythonParser(StackTraceParser):
 
+    LANGUAGE = "python"
+
     def match(self, log: str) -> bool:
         # Primary signal: standard Python traceback header
         if "Traceback (most recent call last)" in log:

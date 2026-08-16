@@ -4,6 +4,8 @@ from .base import StackTraceParser
 
 class JavaParser(StackTraceParser):
 
+    LANGUAGE = "java"
+
     def match(self, log: str) -> bool:
         # Java frames always contain (ClassName.java:lineNumber)
         # This is the most reliable Java-specific signal

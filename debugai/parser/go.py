@@ -4,6 +4,8 @@ from .base import StackTraceParser
 
 class GoParser(StackTraceParser):
 
+    LANGUAGE = "go"
+
     def match(self, log: str) -> bool:
         # Go panics always start with "goroutine N [status]:"
         # or "panic:" — either is a strong signal

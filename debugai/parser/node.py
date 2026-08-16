@@ -4,6 +4,8 @@ from .base import StackTraceParser
 
 class NodeParser(StackTraceParser):
 
+    LANGUAGE = "node"
+
     def match(self, log: str) -> bool:
         return ".js:" in log
 
