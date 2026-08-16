@@ -7,7 +7,7 @@ from debugai.parser.java import JavaParser
 from debugai.parser.go import GoParser
 from debugai.parser.csharp import CSharpParser
 from debugai.parser.node import NodeParser
-from debugai.parser.registry import get_parser
+from debugai.parser.registry import get_parser, detect_language
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -303,6 +303,16 @@ class TestRegistry:
 
     def test_routes_node(self):
         assert isinstance(get_parser(NODE_TRACE), NodeParser)
+
+    def test_detect_language_per_fixture(self):
+        assert detect_language(PYTHON_TRACE) == "python"
+        assert detect_language(JAVA_TRACE) == "java"
+        assert detect_language(GO_TRACE) == "go"
+        assert detect_language(CSHARP_TRACE) == "csharp"
+        assert detect_language(NODE_TRACE) == "node"
+
+    def test_detect_language_none_for_garbage(self):
+        assert detect_language("just some random text, not a stack trace") is None
 
     def test_java_not_stolen_by_csharp(self):
         parser = get_parser(JAVA_TRACE)

@@ -25,3 +25,13 @@ def get_parser(log: str):
         if parser.match(log):
             return parser
     return None
+
+
+def detect_language(log: str):
+    """
+    Return the language id ("python", "java", "go", "csharp", "node") of the
+    parser that matches `log`, or None if nothing matches. Single source of
+    truth for language detection, shared by the analyzer and the CLI.
+    """
+    parser = get_parser(log)
+    return parser.LANGUAGE if parser else None

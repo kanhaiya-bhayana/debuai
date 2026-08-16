@@ -4,6 +4,8 @@ from .base import StackTraceParser
 
 class CSharpParser(StackTraceParser):
 
+    LANGUAGE = "csharp"
+
     def match(self, log: str) -> bool:
         # C# frames look like: at Namespace.Class.Method()
         # Key distinction from Java: no ".java:" file references
