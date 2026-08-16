@@ -257,6 +257,30 @@ class TestNodeParser:
         frames = self.parser.extract_frames(NODE_TRACE)
         assert len(frames) > 0
 
+    def test_extract_location_skips_internal_and_uses_user_frame(self):
+        # innermost frame is a node:internal core frame; location should be the
+        # first real .js frame instead.
+        file, line, _ = self.parser.extract_location(NODE_TRACE)
+        assert file == "/app/routes/user.js"
+        assert line == "22"
+
+    def test_extract_location_anonymous_frame(self):
+        trace = (
+            "TypeError: boom\n"
+            "    at /srv/app/index.js:8:3\n"
+        )
+        file, line, func = self.parser.extract_location(trace)
+        assert file == "/srv/app/index.js"
+        assert line == "8"
+        assert func is None
+
+    def test_extract_location_none_without_js_frame(self):
+        trace = (
+            "TypeError: boom\n"
+            "    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n"
+        )
+        assert self.parser.extract_location(trace) == (None, None, None)
+
 
 # ── Registry ──────────────────────────────────────────────────────────────────
 
