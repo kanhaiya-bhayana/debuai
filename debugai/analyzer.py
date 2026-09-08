@@ -165,23 +165,3 @@ def detect_location(log):
         except Exception:
             pass
     return None, None, None
-
-
-def extract_stack_trace_from_log(log: str):
-    """
-    Extracts the first stack trace found in raw logs.
-    """
-    lines = log.splitlines()
-    stack_trace = []
-    capture = False
-
-    for line in lines:
-        if "Traceback (most recent call last)" in line or _EXCEPTION_PATTERN.search(line):
-            capture = True
-
-        if capture:
-            stack_trace.append(line)
-            if line.strip() == "":
-                break
-
-    return "\n".join(stack_trace) if stack_trace else log
