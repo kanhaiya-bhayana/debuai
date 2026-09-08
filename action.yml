@@ -1,0 +1,146 @@
+name: "DebugAI Error Triage"
+description: "Turn a failed CI run's stack trace into an AI root-cause analysis and post it as a PR comment."
+author: "kanhaiya-bhayana"
+
+branding:
+  icon: "alert-triangle"
+  color: "red"
+
+inputs:
+  log-file:
+    description: "Path to a file containing the error output / stack trace to analyze."
+    required: true
+  provider:
+    description: "AI provider: openai | anthropic | nvidia. Default: auto-detect from whichever *_API_KEY is set."
+    required: false
+    default: ""
+  comment-on-pr:
+    description: "Post the analysis as a PR comment (needs permissions: pull-requests: write). Ignored on non-PR events."
+    required: false
+    default: "true"
+  issues:
+    description: "Also search GitHub for related issues."
+    required: false
+    default: "false"
+  github-token:
+    description: "Token used to post the PR comment (and authenticate issue search)."
+    required: false
+    default: ${{ github.token }}
+  version:
+    description: "pip version spec for debuai, e.g. '==0.1.1'. Default: latest published."
+    required: false
+    default: ""
+  python-version:
+    description: "Python version to install."
+    required: false
+    default: "3.11"
+
+outputs:
+  analysis:
+    description: "The DebugAI analysis as a JSON string."
+    value: ${{ steps.debugai.outputs.analysis }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install DebugAI
+      shell: bash
+      env:
+        DEBUGAI_VERSION: ${{ inputs.version }}
+      run: pip install "debuai${DEBUGAI_VERSION}"
+
+    - name: Analyze
+      id: debugai
+      shell: bash
+      env:
+        DEBUGAI_LOG_FILE: ${{ inputs.log-file }}
+        DEBUGAI_PROVIDER: ${{ inputs.provider }}
+        DEBUGAI_ISSUES: ${{ inputs.issues }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        if [ ! -f "$DEBUGAI_LOG_FILE" ]; then
+          echo "DebugAI: log-file '$DEBUGAI_LOG_FILE' not found — skipping."
+          echo "skipped=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        FLAGS="--ai --json"
+        [ -n "$DEBUGAI_PROVIDER" ] && FLAGS="$FLAGS --provider $DEBUGAI_PROVIDER"
+        [ "$DEBUGAI_ISSUES" = "true" ] && FLAGS="$FLAGS --issues"
+
+        debuai $FLAGS < "$DEBUGAI_LOG_FILE" > debugai.json || true
+        echo "----- DebugAI output -----"
+        cat debugai.json || true
+
+        {
+          echo "analysis<<__DEBUGAI_JSON__"
+          cat debugai.json
+          echo ""
+          echo "__DEBUGAI_JSON__"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Comment on PR
+      if: ${{ inputs.comment-on-pr == 'true' && github.event_name == 'pull_request' && steps.debugai.outputs.skipped != 'true' }}
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+
+          let data;
+          try {
+            data = JSON.parse(fs.readFileSync('debugai.json', 'utf8'));
+          } catch (e) {
+            core.info('DebugAI: no parseable JSON output — skipping comment.');
+            return;
+          }
+          if (Array.isArray(data)) data = data[0];
+          if (!data || data.error) {
+            core.info('DebugAI: no stack trace detected — skipping comment.');
+            return;
+          }
+
+          const ai = data.ai || {};
+          const conf = { high: '🟢 high', medium: '🟡 medium', low: '🔴 low' }[ai.confidence]
+            || ai.confidence || 'n/a';
+          const chain = Array.isArray(data.execution_chain) ? data.execution_chain.join(' → ') : '';
+          const lang = data.language ? ` _(${data.language})_` : '';
+          const marker = '<!-- DEBUGAI -->';
+
+          const lines = [
+            marker,
+            '## 🐛 DebugAI Analysis',
+            '',
+            `**Exception:** \`${data.exception}\` in \`${data.failure_origin}\`${lang}`,
+          ];
+          if (chain) lines.push(`**Call chain:** ${chain}`);
+          lines.push(
+            '',
+            '### 🤖 Root cause',
+            ai.root_cause || '_n/a_',
+            '',
+            '### 🛠 Suggested fix',
+            ai.fix || '_n/a_',
+            '',
+            '### 🛡 Prevention',
+            ai.prevention || '_n/a_',
+            '',
+            `**Confidence:** ${conf}`,
+          );
+          const body = lines.join('\n');
+
+          const { owner, repo } = context.repo;
+          const issue_number = context.issue.number;
+          const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+          const existing = comments.find((c) => c.body && c.body.includes(marker));
+
+          if (existing) {
+            await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+          } else {
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+          }

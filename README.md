@@ -190,19 +190,54 @@ Pipe into `jq`, Slack bots, Jira integrations, or CI pipelines.
 
 ---
 
-## CI / CD Integration
+## GitHub Action — CI error triage
 
-Add DebugAI to your GitHub Actions workflow to get AI analysis on every failed build:
+Get an AI root-cause **comment on the PR** every time CI fails. Drop this into a
+workflow (e.g. `.github/workflows/ci.yml`):
 
 ```yaml
-- name: Analyse failure
-  if: failure()
-  run: |
-    pip install debuai
-    cat logs/error.log | debuai --ai --json
-  env:
-    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+permissions:
+  contents: read
+  pull-requests: write        # lets DebugAI comment on the PR
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Run your build/tests, capturing output to a file
+      - name: Test
+        run: |
+          set -o pipefail
+          pytest 2>&1 | tee build.log
+
+      # On failure, let DebugAI explain it on the PR
+      - name: DebugAI triage
+        if: failure()
+        uses: kanhaiya-bhayana/debuai@v1
+        with:
+          log-file: build.log
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}   # or ANTHROPIC_API_KEY / NVIDIA_API_KEY
 ```
+
+Set one provider key as a repo secret — DebugAI auto-detects it (or pin one with
+`provider:`). It posts a single comment and updates it in place on re-runs; if no
+stack trace is found in the log, it stays silent.
+
+| Input | Default | Description |
+|---|---|---|
+| `log-file` | *(required)* | File with the error output / stack trace to analyze |
+| `provider` | auto-detect | `openai` \| `anthropic` \| `nvidia` |
+| `issues` | `false` | Also search GitHub for related issues |
+| `comment-on-pr` | `true` | Post/update the PR comment |
+| `version` | latest | pip version spec for `debuai`, e.g. `==0.1.1` |
+| `python-version` | `3.11` | Python to install |
+
+Output: `analysis` — the full result as a JSON string.
+
+> Prefer the raw CLI in CI? `pip install debuai` and `cat build.log | debuai --ai --json`.
 
 ---
 
