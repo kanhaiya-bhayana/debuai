@@ -6,8 +6,8 @@ from debugai.parser.registry import get_parser
 # Java/C#-style exceptions (NullReferenceException, IOException)
 _EXCEPTION_PATTERN = re.compile(r'\w+(?:Exception|Error)')
 _EXCEPTION_START = re.compile(
-    r'^\\s*(?:Exception in thread\\s+"[^"]+"\\s+)?'
-    r'(?:[\\w$]+\\.)*[\\w$]*(?:Exception|Error|Warning)\\b'
+    r'^\s*(?:Exception in thread\s+"[^"]+"\s+)?'
+    r'(?:[\w$]+\.)*[\w$]*(?:Exception|Error|Warning)\b'
 )
 
 # A Go trace opens with a panic / fatal-error line. Unlike Python/Java it then
