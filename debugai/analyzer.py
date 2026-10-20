@@ -44,7 +44,7 @@ def extract_all_stack_traces(log: str):
             flush()
             capture, go_mode = True, False
 
-        elif not capture and re.search(r'^\\s*File ".+", line \\d+, in \\S+', line):
+        elif not capture and re.search(r'^\s*File ".+", line \d+, in \S+', line):
             flush()
             capture, go_mode = True, False
 
