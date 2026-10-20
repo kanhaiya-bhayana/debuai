@@ -17,6 +17,9 @@ class CSharpParser(StackTraceParser):
     def extract_frames(self, log: str):
         # Returns innermost frame first (matches convention of other parsers)
         frames = re.findall(r'at\s+([\w.<>[\]]+(?:\(.*?\))?)', log)
+        # Strip generic type arguments and parameter lists from method names so
+        # origins remain stable across runtime formatting variations.
+        frames = [re.sub(r'\[.*?\]', '', frame).split('(')[0] for frame in frames]
         return frames  # C# traces are already innermost-first
 
     def extract_exception_type(self, log: str) -> str:
