@@ -5,11 +5,15 @@ from debugai.parser.registry import get_parser
 # Matches both Python-style errors (ValueError, KeyError) and
 # Java/C#-style exceptions (NullReferenceException, IOException)
 _EXCEPTION_PATTERN = re.compile(r'\w+(?:Exception|Error)')
+_EXCEPTION_START = re.compile(
+    r'^\\s*(?:Exception in thread\\s+"[^"]+"\\s+)?'
+    r'(?:[\\w$]+\\.)*[\\w$]*(?:Exception|Error|Warning)\\b'
+)
 
 # A Go trace opens with a panic / fatal-error line. Unlike Python/Java it then
 # has an internal blank line before its goroutine dump, so it needs special
 # handling in the block splitter below.
-_GO_TRACE_START = re.compile(r'^\s*(?:panic:|fatal error:)')
+_GO_TRACE_START = re.compile(r'^\\s*(?:panic:|fatal error:|signal\\s+SIG\\w+:)')
 
 
 def _has_go_body(lines) -> bool:
@@ -49,7 +53,7 @@ def extract_all_stack_traces(log: str):
             capture, go_mode = True, False
 
         # C# / Java / Node exception, or a Go panic, on its own line starts a block
-        elif not capture and (_EXCEPTION_PATTERN.search(line) or _GO_TRACE_START.search(line)):
+        elif not capture and (_EXCEPTION_START.search(line) or _GO_TRACE_START.search(line)):
             flush()
             capture = True
             go_mode = bool(_GO_TRACE_START.search(line))
