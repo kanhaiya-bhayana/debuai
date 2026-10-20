@@ -163,8 +163,8 @@ class TestExtractAllStackTraces:
 
     def test_trimmed_python_trace_starts_at_frame(self):
         trace = (
-            '  File "/app/worker.py", line 55, in run_job\\n'
-            '    execute(job)\\n'
+            '  File "/app/worker.py", line 55, in run_job\n'
+            '    execute(job)\n'
             'RuntimeError: worker failed'
         )
         traces = extract_all_stack_traces(trace)
