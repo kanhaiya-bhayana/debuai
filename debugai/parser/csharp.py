@@ -17,42 +17,18 @@ class CSharpParser(StackTraceParser):
     def extract_frames(self, log: str):
         # Returns innermost frame first (matches convention of other parsers)
         frames = re.findall(r'at\s+([\w.<>[\]]+(?:\(.*?\))?)', log)
-        # Strip generic type arguments and parameter contents. Preserve ()
-        # only when the original method has an empty parameter list; methods
-        # such as Enumerable.First(IEnumerable source) are reported by name only.
+        # Remove generic type arguments and parameter contents. Keep empty
+        # parentheses for parameterless methods, but omit non-empty parameters.
         normalized = []
         for frame in frames:
             frame = re.sub(r'\[.*?\]', '', frame)
-            method = re.match(r'^(.*?)\((.*?)\)
-        return frames  # C# traces are already innermost-first
-
-    def extract_exception_type(self, log: str) -> str:
-        match = re.search(r'(\w+Exception)', log)
-        if match:
-            return match.group(1)
-        return "UnknownException"
-
-    def extract_location(self, log: str):
-        """Return (file, line, function) for the failure origin frame."""
-        # C# frames optionally include file info:
-        # at Class.Method() in /path/to/File.cs:line 42
-        match = re.search(
-            r'at\s+([\w.<>]+\(.*?\))\s+in\s+(.+):line\s+(\d+)', log
-        )
-        if match:
-            return match.group(2), match.group(3), match.group(1)
-        # No file info — derive from class name
-        frame_match = re.search(r'at\s+([\w.]+)\(', log)
-        if frame_match:
-            return None, None, frame_match.group(1)
-        return None, None, None, frame)
+            method = re.match(r'^(.*?)\((.*?)\)$', frame)
             if method:
                 name, parameters = method.groups()
                 normalized.append(name + '()' if not parameters.strip() else name)
             else:
                 normalized.append(frame)
-        frames = normalized
-        return frames  # C# traces are already innermost-first
+        return normalized
 
     def extract_exception_type(self, log: str) -> str:
         match = re.search(r'(\w+Exception)', log)
