@@ -161,6 +161,16 @@ class TestExtractAllStackTraces:
         assert len(traces) == 1
         assert "ValueError" in traces[0]
 
+    def test_trimmed_python_trace_starts_at_frame(self):
+        trace = (
+            '  File "/app/worker.py", line 55, in run_job\\n'
+            '    execute(job)\\n'
+            'RuntimeError: worker failed'
+        )
+        traces = extract_all_stack_traces(trace)
+        assert len(traces) == 1
+        assert extract_failure_origin(traces[0]) == "run_job"
+
     def test_multiple_traces_in_log(self):
         traces = extract_all_stack_traces(MULTI_TRACE_LOG)
         assert len(traces) == 2
