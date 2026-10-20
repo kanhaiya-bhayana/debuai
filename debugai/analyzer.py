@@ -7,7 +7,7 @@ from debugai.parser.registry import get_parser
 _EXCEPTION_PATTERN = re.compile(r'\w+(?:Exception|Error)')
 _EXCEPTION_START = re.compile(
     r'^\s*(?:Exception in thread\s+"[^"]+"\s+)?'
-    r'(?:[\w$]+\.)*[\w$]*(?:Exception|Error|Warning)\b'
+    r'(?:[\w$]+\.)*[\w$]*(?:Exception|Error|Warning|Fault)\b'
 )
 
 # A Go trace opens with a panic / fatal-error line. Unlike Python/Java it then
