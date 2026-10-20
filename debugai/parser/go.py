@@ -10,7 +10,7 @@ class GoParser(StackTraceParser):
         # Go panics always start with "goroutine N [status]:"
         # or "panic:" — either is a strong signal
         has_goroutine = bool(re.search(r'goroutine\s+\d+\s+\[', log))
-        has_panic = "panic:" in log
+        has_panic = "panic:" in log or bool(re.search(r"^signal\\s+SIG\\w+:", log, re.MULTILINE))
         has_go_files = bool(re.search(r'\.go:\d+', log))
         return (has_goroutine or has_panic) and has_go_files
 
