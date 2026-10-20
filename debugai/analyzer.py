@@ -13,7 +13,7 @@ _EXCEPTION_START = re.compile(
 # A Go trace opens with a panic / fatal-error line. Unlike Python/Java it then
 # has an internal blank line before its goroutine dump, so it needs special
 # handling in the block splitter below.
-_GO_TRACE_START = re.compile(r'^\\s*(?:panic:|fatal error:|signal\\s+SIG\\w+:)')
+_GO_TRACE_START = re.compile(r'^\s*(?:panic:|fatal error:|signal\s+SIG\w+:)')
 
 
 def _has_go_body(lines) -> bool:
