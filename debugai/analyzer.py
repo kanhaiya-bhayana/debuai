@@ -37,8 +37,14 @@ def extract_all_stack_traces(log: str):
 
     for line in lines:
 
-        # Python traceback starts with a dedicated header
+        # Python traceback starts with a dedicated header. Some logs are trimmed
+        # and contain frames + the exception but omit this header, so recognize a
+        # Python frame as a valid start as well.
         if "Traceback (most recent call last)" in line:
+            flush()
+            capture, go_mode = True, False
+
+        elif not capture and re.search(r'^\\s*File ".+", line \\d+, in \\S+', line):
             flush()
             capture, go_mode = True, False
 
