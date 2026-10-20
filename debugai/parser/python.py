@@ -26,7 +26,7 @@ class PythonParser(StackTraceParser):
             return match.group(1)
         # A traceback with frames but no exception line is truncated; don't
         # mislabel the final source-code line (e.g. run_step()) as the exception.
-        if "Traceback (most recent call last)" in log or re.search(r'File ".+", line \\d+, in \\S+', log):
+        if "Traceback (most recent call last)" in log or re.search(r'File ".+", line \d+, in \S+', log):
             return "UnknownException"
         # Fallback: last non-frame, non-Traceback line
         for line in reversed(log.splitlines()):
