@@ -3,7 +3,6 @@
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import time
@@ -159,6 +158,7 @@ def main():
                     "commit": commit,
                     "expected": case["expected"],
                     "actual": None,
+                    "raw_response": None,
                     "unsupported_claim_flags": [],
                     "review": {
                         "root_cause_correctness": None,
@@ -175,6 +175,7 @@ def main():
                 started_case = time.perf_counter()
                 try:
                     raw = provider.analyze(build_prompt(case))
+                    record["raw_response"] = raw
                     result = provider.parse_response(raw)
                     record["actual"] = result
                     record["unsupported_claim_flags"] = find_unsupported_claim_flags(
