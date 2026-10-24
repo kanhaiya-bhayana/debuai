@@ -70,3 +70,34 @@ Run at least three repeats before comparing providers. Report mean score, per-di
 2. Save the output with the commit SHA and Python version.
 3. Change one behavior at a time.
 4. Re-run the same cases after each change and compare per-case results.
+
+## Expanded diagnosis benchmark (50 cases)
+
+The diagnosis dataset now contains 50 synthetic cases across network and HTTP failures, Python/Java/Node.js/Go/.NET exceptions, SQL and database issues, Redis, Kafka, disk capacity, clock skew, retries, circuit breakers, and untrusted instructions embedded in logs. These cases are designed to exercise a wider range of failure patterns; they are not a representative sample of every production incident.
+
+Run the provider benchmark using whichever provider credentials you currently have. For example, NVIDIA only:
+
+```bash
+python benchmarks/run_diagnosis_benchmark.py --provider nvidia --repeat 3
+```
+
+### Offline deterministic evaluator
+
+After a run, evaluate the saved JSONL without making any additional API calls:
+
+```bash
+python benchmarks/evaluate_diagnosis_results.py \
+  --input benchmarks/results/diagnosis-<timestamp>.jsonl \
+  --output benchmarks/results/evaluation-<timestamp>.jsonl
+```
+
+Replace each placeholder with the actual output filename printed by the benchmark runner. The evaluator checks:
+- provider/API error records;
+- whether the parsed response is an object with non-empty `root_cause`, `fix`, `prevention`, and valid `confidence`;
+- per-case evidence cue groups, where configured;
+- literal matches against phrases marked as unsupported.
+
+Evidence cues are simple substring checks, and unsupported-phrase matches are only review flags. Both can produce false positives or false negatives. They do **not** determine semantic accuracy, and a passing report is not a diagnosis-accuracy score. Review flagged records alongside the original log/context and expected answer. The evaluator exits non-zero for provider errors, malformed/missing required fields, invalid confidence, or unknown case IDs; evidence-cue and phrase flags are reported for review but do not alone fail the command.
+
+The expanded dataset includes deliberately ambiguous cases. A good answer should distinguish confirmed observations from hypotheses and ask for missing evidence rather than forcing a specific diagnosis. Keep provider, model, prompt version, dataset version, and commit fixed when comparing runs. Since you currently have NVIDIA credentials only, establish and improve the NVIDIA baseline first; provider comparison can wait until other credentials are available.
+
