@@ -38,6 +38,37 @@ The runner reports exact-match rates for trace count, exception types, and origi
 
 For each diagnosis case, record the provider/model, prompt version, run date, root-cause assessment, evidence grounding, actionability/safety, confidence calibration, and unsupported claims. Score each dimension from 0–2 (maximum 10). Run cases multiple times and do not treat a plausible explanation as proven unless the supplied log/context supports it.
 
+
+## AI diagnosis benchmark
+
+The diagnosis benchmark calls a selected provider and writes every response to a JSONL artifact for human review. It is intentionally separate from parser correctness: diagnosis scores must not hide parser failures.
+
+Install the project and configure exactly one provider key, then run from the repository root:
+
+```bash
+pip install -e ".[dev]"
+export OPENAI_API_KEY=...
+python benchmarks/run_diagnosis_benchmark.py --provider openai --repeat 3
+```
+
+Use `--provider anthropic` or `--provider nvidia` to compare another provider. The provider is explicit (no failover), and the selected model, prompt version, commit, UTC timestamp, per-case latency, raw structured result, and errors are recorded. Keep API keys out of command history and never put secrets in benchmark cases.
+
+By default, results are saved to `benchmarks/results/diagnosis-<timestamp>.jsonl`. Results contain synthetic case data and model responses; review them before publishing. Do not commit results unless you intentionally want to publish the provider output and accept the associated cost/privacy implications.
+
+### Human scoring rubric
+
+Score each dimension from 0 to 2 for each response. The runner leaves review fields blank deliberately; semantic quality should not be guessed using brittle keyword matching.
+
+- **Root-cause correctness:** 0 = wrong / unsupported; 1 = partially correct or too vague; 2 = matches the evidence and states important uncertainty.
+- **Evidence grounding:** 0 = material unsupported claims; 1 = mixed grounding; 2 = claims are tied to the supplied log/context.
+- **Safe actionability:** 0 = unsafe or irrelevant; 1 = partly useful but incomplete; 2 = practical, proportionate, and safe.
+- **Confidence calibration:** 0 = clearly over/under-confident; 1 = defensible but imperfect; 2 = confidence matches evidence strength.
+- **Unsupported claims:** 0 = significant unsupported claim(s); 1 = minor overreach; 2 = no material unsupported claims.
+
+Maximum: 10 points per response. Record the dimension scores in the `review` object in the output JSONL. The runner's `unsupported_claim_flags` are literal phrase checks only and can produce false positives/negatives; they are reviewer hints, not a score.
+
+Run at least three repeats before comparing providers. Report mean score, per-dimension mean, score spread, case-level failures, and API errors. Keep the dataset and prompt version fixed when comparing providers. Do not treat one small synthetic dataset as proof of production-level accuracy.
+
 ## Baseline discipline
 
 1. Run this benchmark against the unchanged baseline.
