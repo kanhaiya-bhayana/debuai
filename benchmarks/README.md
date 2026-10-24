@@ -34,11 +34,6 @@ Cases are synthetic and designed to be safely shareable. They are an initial smo
 
 The runner reports exact-match rates for trace count, exception types, and origins, plus an overall case pass rate. Keep per-case output: the aggregate alone hides failure patterns.
 
-## AI diagnosis benchmark (next step)
-
-For each diagnosis case, record the provider/model, prompt version, run date, root-cause assessment, evidence grounding, actionability/safety, confidence calibration, and unsupported claims. Score each dimension from 0–2 (maximum 10). Run cases multiple times and do not treat a plausible explanation as proven unless the supplied log/context supports it.
-
-
 ## AI diagnosis benchmark
 
 The diagnosis benchmark calls a selected provider and writes every response to a JSONL artifact for human review. It is intentionally separate from parser correctness: diagnosis scores must not hide parser failures.
