@@ -66,28 +66,42 @@ def evaluate(record, case):
     })
 
     forbidden = []
+    review_only_matches = []
+    review_only_phrases = case.get("checks", {}).get("review_only_phrases", [])
     for phrase in case.get("checks", {}).get("forbidden_any", []):
         if str(phrase).casefold() in text:
-            forbidden.append(str(phrase))
+            (review_only_matches if phrase in review_only_phrases else forbidden).append(str(phrase))
     expected = case.get("expected", {})
     for phrase in expected.get("must_not_claim", []):
-        if str(phrase).casefold() in text and phrase not in forbidden:
-            forbidden.append(str(phrase))
+        if str(phrase).casefold() in text and phrase not in forbidden and phrase not in review_only_matches:
+            (review_only_matches if phrase in review_only_phrases else forbidden).append(str(phrase))
+    phrase_check_passed = False if forbidden else (None if review_only_matches else True)
     checks.append({
         "check": "literal_unsupported_phrase_flags",
-        "passed": not forbidden,
-        "detail": "review these phrase matches; literal checks can produce false positives and false negatives",
+        "passed": phrase_check_passed,
+        "review_required": bool(review_only_matches),
+        "detail": (
+            "human review required: literal matching cannot determine whether these phrases are quoted or followed"
+            if review_only_matches else
+            "review these phrase matches; literal checks can produce false positives and false negatives"
+        ),
         "matches": forbidden,
+        "review_only_matches": review_only_matches,
     })
 
-    passed = sum(1 for item in checks if item["passed"])
+    passed = sum(1 for item in checks if item["passed"] is True)
+    automatic_total = sum(1 for item in checks if item["passed"] is not None)
     return {
         "case_id": record.get("case_id", record.get("id", "unknown")),
         "run_index": record.get("run_index"),
         "provider": record.get("provider"),
         "model": record.get("model"),
         "automatic_checks_passed": passed,
-        "automatic_checks_total": len(checks),
+        "automatic_checks_total": automatic_total,
+        "human_review_required": [
+            item["check"] for item in checks if item.get("review_required")
+        ],
+        "human_review_notes": case.get("human_review_notes", []),
         "checks": checks,
         "interpretation": "Triage only; passing checks does not prove semantic correctness.",
     }
@@ -121,10 +135,16 @@ def main():
     check_counts = Counter()
     for report in reports:
         for check in report["checks"]:
-            check_counts[check["check"] + (":passed" if check["passed"] else ":failed")] += 1
+            outcome = (
+                "review_required" if check.get("review_required") else
+                "passed" if check["passed"] is True else
+                "failed"
+            )
+            check_counts[check["check"] + ":" + outcome] += 1
 
     total_checks = sum(report["automatic_checks_total"] for report in reports)
     passed_checks = sum(report["automatic_checks_passed"] for report in reports)
+    review_required_count = sum(len(report["human_review_required"]) for report in reports)
     print("DebugAI offline diagnosis evaluation")
     print("Input records: " + str(len(records)))
     print("Evaluated records: " + str(len(reports)))
@@ -132,11 +152,13 @@ def main():
     if unknown_ids:
         print("Unknown IDs: " + ", ".join(str(item) for item in unknown_ids))
     print("Deterministic checks passed: " + str(passed_checks) + "/" + str(total_checks))
+    print("Checks requiring human review: " + str(review_required_count))
     print("NOTE: this is not a diagnosis-accuracy score; phrase/cue checks require human interpretation.")
     for name in ("provider_error_absent", "actual_is_object", "required_fields_nonempty", "confidence_is_valid", "required_evidence_cues", "literal_unsupported_phrase_flags"):
         passed = check_counts[name + ":passed"]
         failed = check_counts[name + ":failed"]
-        print("  " + name + ": " + str(passed) + " passed, " + str(failed) + " flagged")
+        review = check_counts[name + ":review_required"]
+        print("  " + name + ": " + str(passed) + " passed, " + str(failed) + " flagged, " + str(review) + " review required")
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
